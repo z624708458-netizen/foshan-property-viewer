@@ -5,3 +5,4 @@ deploy/
 *.db
 .env
 .DS_Store*.zip
+*.zip
