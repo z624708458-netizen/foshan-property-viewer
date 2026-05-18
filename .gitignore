@@ -4,4 +4,4 @@ data/
 deploy/
 *.db
 .env
-.DS_Store
+.DS_Store*.zip
