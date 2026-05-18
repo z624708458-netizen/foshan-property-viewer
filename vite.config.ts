@@ -9,6 +9,15 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          antd: ['antd', '@ant-design/icons'],
+          echarts: ['echarts', 'echarts-for-react'],
+          react: ['react', 'react-dom'],
+        },
+      },
+    },
   },
   resolve: {
     alias: {
