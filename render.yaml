@@ -2,6 +2,6 @@ services:
   - type: web
     name: foshan-property-viewer
     env: node
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: node server/index.js
     plan: free
