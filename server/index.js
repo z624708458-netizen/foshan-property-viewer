@@ -55,8 +55,8 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/districts', async (_req, res) => {
   try {
     if (USE_SUPABASE) {
-      const data = await sbQuery('districts', { select: '*', order: 'sort_order' });
-      return res.json(data);
+      const result = await sbQuery('districts', { select: '*', order: 'sort_order' });
+      return res.json(result.data);
     }
     res.json(localQueries.getDistricts());
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -96,12 +96,12 @@ app.get('/api/projects/search', async (req, res) => {
     if (!keyword) return res.json([]);
 
     if (USE_SUPABASE) {
-      const data = await sbQuery('projects', {
+      const result = await sbQuery('projects', {
         select: '*,districts(name)',
         filters: [{ key: 'name', value: `ilike.*${keyword}*` }],
         limit: 50,
       });
-      return res.json(data.map(d => ({ ...d, district_name: d.districts?.name || '' })));
+      return res.json(result.data.map(d => ({ ...d, district_name: d.districts?.name || '' })));
     }
     res.json(localQueries.searchProjects(keyword));
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -125,21 +125,20 @@ app.get('/api/projects/:id/units', async (req, res) => {
       const { building } = req.query;
       const filters = [{ key: 'project_id', value: `eq.${req.params.id}` }];
       if (building) filters.push({ key: 'building_id', value: `eq.${building}` });
-      const data = await sbQuery('units', { select: '*', filters, limit: 500 });
+      const result = await sbQuery('units', { select: '*', filters, limit: 500 });
+      const data = result.data;
 
       // 获取价格
       const unitIds = data.map(u => u.id);
       if (unitIds.length > 0) {
-        // 分批获取价格
         const allPrices = [];
         for (let i = 0; i < unitIds.length; i += 50) {
           const batch = unitIds.slice(i, i + 50);
-          const idFilter = batch.map(id => `unit_id=eq.${id}`).join(',');
-          const prices = await sbQuery('price_snapshots', {
+          const priceRes = await sbQuery('price_snapshots', {
             select: 'unit_id,total_price,unit_price,discounted_unit_price',
             filters: [{ key: 'unit_id', value: `in.(${batch.join(',')})` }],
           });
-          allPrices.push(...prices);
+          allPrices.push(...priceRes.data);
         }
         const priceMap = {};
         allPrices.forEach(p => { priceMap[p.unit_id] = p; });
@@ -172,10 +171,10 @@ app.get('/api/projects/:id/price-history', (req, res) => {
 app.get('/api/stats', async (_req, res) => {
   try {
     if (USE_SUPABASE) {
-      const [pCount] = await sbQuery('projects', { select: 'count' });
-      const [uCount] = await sbQuery('units', { select: 'count' });
-      const [sCount] = await sbQuery('price_snapshots', { select: 'count' });
-      return res.json({ project_count: pCount.count, unit_count: uCount.count, snapshot_count: sCount.count, last_scrape: null });
+      const pRes = await sbQuery('projects', { select: '*', limit: 1, count: true });
+      const uRes = await sbQuery('units', { select: '*', limit: 1, count: true });
+      const sRes = await sbQuery('price_snapshots', { select: '*', limit: 1, count: true });
+      return res.json({ project_count: pRes.total, unit_count: uRes.total, snapshot_count: sRes.total, last_scrape: null });
     }
     res.json(localQueries.getStats());
   } catch (e) { res.status(500).json({ error: e.message }); }
