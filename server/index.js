@@ -11,7 +11,7 @@ const PORT = 3456;
 // Supabase 配置（云端部署时使用）
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://dxlhuiaprsqcoihoipcb.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_publishable_BJMp_O22dULvZhIgHna93w_KSGFe6kA';
-const USE_SUPABASE = process.env.USE_SUPABASE === 'true' || !!process.env.RAILWAY;
+let USE_SUPABASE = process.env.USE_SUPABASE === 'true';
 
 // Supabase REST 查询
 async function sbQuery(table, params = {}) {
@@ -194,11 +194,24 @@ app.get('*', (req, res) => {
 });
 
 async function start() {
+  // 尝试检测Supabase可用性
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/districts?select=count`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+    });
+    if (r.ok) {
+      USE_SUPABASE = true;
+      console.log('检测到Supabase, 使用云端模式');
+    }
+  } catch (e) {
+    console.log('Supabase不可用, 使用本地模式');
+  }
+
   if (!USE_SUPABASE) await initDb();
   const port = process.env.PORT || PORT;
   app.listen(port, () => {
     console.log(`佛山楼盘数据查看器已启动: http://localhost:${port} (${USE_SUPABASE ? 'Supabase' : 'Local'})`);
-    if (!process.env.RENDER && !process.env.RAILWAY) {
+    if (!process.env.RAILWAY && !process.env.RENDER) {
       exec(`${process.platform === 'win32' ? 'start' : 'open'} http://localhost:${port}`);
     }
   });
