@@ -52,7 +52,7 @@ function updateProjectAggregates(projectId) {
 
 function getProjectsByDistrict(districtId) {
   return getAll(`
-    SELECT p.id, p.name, p.address, p.developer, p.last_updated_at,
+    SELECT p.id, p.district_id, p.name, p.address, p.developer, p.last_updated_at,
       p.area_min, p.area_max, p.avg_total_price, p.avg_unit_price, p.floor_price
     FROM projects p
     WHERE p.district_id = ?
