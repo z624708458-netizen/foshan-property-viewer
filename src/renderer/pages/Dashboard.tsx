@@ -13,14 +13,20 @@ export default function Dashboard() {
   const { selectDistrict, goBack } = useAppStore();
 
   useEffect(() => {
-    goBack();
+    setLoading(true);
     Promise.all([api.getDistricts(), api.getStats()])
       .then(([d, s]) => {
-        setDistricts(d);
-        setStats(s);
+        if (d && d.length) setDistricts(d);
+        if (s) setStats(s);
       })
-      .catch((err) => console.error('Dashboard error:', err))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        console.error('Dashboard error:', err);
+        setLoading(false);
+      })
+      .finally(() => {
+        // 确保 loading 状态一定会结束
+        setTimeout(() => setLoading(false), 500);
+      });
   }, []);
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
