@@ -24,11 +24,22 @@ async function sbQuery(table, params = {}) {
     params.filters.forEach(f => url.searchParams.append(f.key, f.value));
   }
 
-  const res = await fetch(url.toString(), {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
-  });
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+  };
+  if (params.count) headers['Prefer'] = 'count=exact';
+
+  const res = await fetch(url.toString(), { headers });
   if (!res.ok) throw new Error(`Supabase: ${res.status}`);
-  return res.json();
+
+  const result = { data: await res.json() };
+  const range = res.headers.get('content-range');
+  if (range) {
+    // Content-Range: 0-29/3698
+    result.total = parseInt(range.split('/')[1]) || 0;
+  }
+  return result;
 }
 
 const distPath = path.join(__dirname, '..', 'dist', 'renderer');
@@ -58,15 +69,17 @@ app.get('/api/projects', async (req, res) => {
 
     if (USE_SUPABASE) {
       const filters = [{ key: 'district_id', value: `eq.${district}` }];
-      const all = await sbQuery('projects', {
-        select: '*',
-        order: 'floor_price.desc.nulls_last',
-        filters,
-      });
-      const p = parseInt(page) || 1;
       const ps = parseInt(pageSize) || 30;
-      const start = (p - 1) * ps;
-      return res.json({ projects: all.slice(start, start + ps), total: all.length, page: p, pageSize: ps });
+      const p = parseInt(page) || 1;
+      const raw = await sbQuery('projects', {
+        select: '*',
+        order: 'floor_price.desc.nullslast',
+        filters,
+        limit: ps,
+        offset: (p - 1) * ps,
+        count: true,
+      });
+      return res.json({ projects: raw.data, total: raw.total, page: p, pageSize: ps });
     }
 
     const all = localQueries.getProjectsByDistrict(district);
