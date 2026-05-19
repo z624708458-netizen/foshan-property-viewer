@@ -20,14 +20,10 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'src/renderer'),
-    },
+    alias: { '@': path.resolve(__dirname, 'src/renderer') },
   },
   server: {
     port: 5173,
-    proxy: {
-      '/api': 'http://localhost:3456',
-    },
+    proxy: { '/api': 'http://localhost:3456' },
   },
 })

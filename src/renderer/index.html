@@ -4,9 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>佛山楼盘数据查看器</title>
+    <style>
+      #loading-msg { text-align: center; padding-top: 80px; font-family: 'Microsoft YaHei', sans-serif; color: #4A90D9; }
+      #loading-msg h2 { margin-bottom: 8px; }
+      .spinner { width: 40px; height: 40px; margin: 20px auto; border: 3px solid #E8E8E8; border-top: 3px solid #4A90D9; border-radius: 50%; animation: spin 0.8s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="loading-msg">
+        <h2>佛山楼盘数据查看器</h2>
+        <p>正在加载，请稍候...</p>
+        <div class="spinner"></div>
+      </div>
+    </div>
     <script type="module" src="./index.tsx"></script>
   </body>
 </html>
