@@ -4,12 +4,12 @@ import { SearchOutlined, SyncOutlined, HomeOutlined, EnvironmentOutlined } from 
 import { theme } from './styles/theme'
 import { useAppStore } from './store/useAppStore'
 import { api } from './services/api'
-import Dashboard from './pages/Dashboard'
-import DistrictView from './pages/DistrictView'
-import ProjectDetail from './pages/ProjectDetail'
-import SearchResult from './pages/SearchResult'
-import PriceHistory from './pages/PriceHistory'
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const DistrictView = lazy(() => import('./pages/DistrictView'))
+const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
+const SearchResult = lazy(() => import('./pages/SearchResult'))
+const PriceHistory = lazy(() => import('./pages/PriceHistory'))
 
 const { Sider, Content } = Layout
 const { Title } = Typography
@@ -108,7 +108,9 @@ function App() {
         </Sider>
 
         <Content style={{ padding: 24, background: '#F5F7FA', overflow: 'auto' }}>
-          {renderContent()}
+          <Suspense fallback={<div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>}>
+            {renderContent()}
+          </Suspense>
         </Content>
       </Layout>
     </ConfigProvider>
