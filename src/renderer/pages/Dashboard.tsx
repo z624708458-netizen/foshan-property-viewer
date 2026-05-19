@@ -10,7 +10,8 @@ export default function Dashboard() {
   const [districts, setDistricts] = useState<District[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const { selectDistrict, goBack } = useAppStore();
+  const [error, setError] = useState('');
+  const { selectDistrict } = useAppStore();
 
   useEffect(() => {
     setLoading(true);
@@ -21,15 +22,16 @@ export default function Dashboard() {
       })
       .catch((err) => {
         console.error('Dashboard error:', err);
+        setError(err?.message || '加载失败');
         setLoading(false);
       })
       .finally(() => {
-        // 确保 loading 状态一定会结束
         setTimeout(() => setLoading(false), 500);
       });
   }, []);
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#ff4d4f' }}>加载失败: {error}</div>;
 
   return (
     <div>
