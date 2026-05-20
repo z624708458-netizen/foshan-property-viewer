@@ -107,10 +107,16 @@ app.get('/api/projects/search', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/projects/:id', (req, res) => {
+app.get('/api/projects/:id', async (req, res) => {
   try {
     if (USE_SUPABASE) {
-      return res.json({ project: { id: req.params.id }, buildings: [] });
+      const projList = await sbQuery('projects', { select: '*', filters: [{ key: 'id', value: `eq.${req.params.id}` }] });
+      const project = projList.data?.[0] || { id: req.params.id, name: '', district_id: '' };
+      // 从units获取楼栋列表（distinct building_id）
+      const unitRes = await sbQuery('units', { select: 'building_id', filters: [{ key: 'project_id', value: `eq.${req.params.id}` }], limit: 500 });
+      const bldIds = [...new Set((unitRes.data || []).map(u => u.building_id).filter(Boolean))];
+      const buildings = bldIds.map(id => ({ id, project_id: req.params.id, name: id }));
+      return res.json({ project, buildings });
     }
     const project = localQueries.getProject(req.params.id);
     if (!project) return res.status(404).json({ error: '项目不存在' });
@@ -125,20 +131,24 @@ app.get('/api/projects/:id/units', async (req, res) => {
       const { building } = req.query;
       const filters = [{ key: 'project_id', value: `eq.${req.params.id}` }];
       if (building) filters.push({ key: 'building_id', value: `eq.${building}` });
-      const result = await sbQuery('units', { select: '*', filters, limit: 500 });
+      const result = await sbQuery('units', { select: '*', filters, limit: 300 });
       const data = result.data;
 
-      // 获取价格
+      // 获取价格（限10批避免超时）
       const unitIds = data.map(u => u.id);
       if (unitIds.length > 0) {
         const allPrices = [];
-        for (let i = 0; i < unitIds.length; i += 50) {
+        for (let i = 0; i < Math.min(unitIds.length, 300); i += 50) {
           const batch = unitIds.slice(i, i + 50);
-          const priceRes = await sbQuery('price_snapshots', {
-            select: 'unit_id,total_price,unit_price,discounted_unit_price',
-            filters: [{ key: 'unit_id', value: `in.(${batch.join(',')})` }],
-          });
-          allPrices.push(...priceRes.data);
+          try {
+            const priceRes = await sbQuery('price_snapshots', {
+              select: 'unit_id,total_price,unit_price,discounted_unit_price',
+              filters: [{ key: 'unit_id', value: `in.(${batch.join(',')})` }],
+            });
+            allPrices.push(...priceRes.data);
+          } catch (e) {
+            // 价格查询失败不阻塞
+          }
         }
         const priceMap = {};
         allPrices.forEach(p => { priceMap[p.unit_id] = p; });
