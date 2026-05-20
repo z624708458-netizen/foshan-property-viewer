@@ -13,10 +13,12 @@ export default function ProjectDetail() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedBuilding, setSelectedBuilding] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (selectedProject) {
       setLoading(true);
+      setError('');
       setSelectedBuilding('all');
       Promise.all([api.getProject(selectedProject), api.getUnits(selectedProject)])
         .then(([pData, uData]) => {
@@ -24,6 +26,7 @@ export default function ProjectDetail() {
           setBuildings(pData.buildings);
           setUnits(uData);
         })
+        .catch((err) => setError(err?.message || '加载失败'))
         .finally(() => setLoading(false));
     }
   }, [selectedProject]);
@@ -62,6 +65,7 @@ export default function ProjectDetail() {
   }, [pricedUnits]);
 
   if (loading) return <div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>;
+  if (error) return <div style={{ textAlign: 'center', padding: 40, color: '#ff4d4f' }}>加载失败: {error}</div>;
   if (!project) return <div>未找到项目</div>;
 
   const columns = [
