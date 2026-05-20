@@ -52,6 +52,15 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString(), mode: USE_SUPABASE ? 'cloud' : 'local' });
 });
 
+app.get('/api/debug/supabase', async (_req, res) => {
+  try {
+    const test = await sbQuery('projects', { select: 'id,name', limit: 3 });
+    res.json({ ok: true, first_3: test.data, supabase_url: SUPABASE_URL });
+  } catch (e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
 app.get('/api/districts', async (_req, res) => {
   try {
     if (USE_SUPABASE) {
